@@ -20,6 +20,13 @@ let spawningInterval = null;
 toggleGameControlButtons();
 toggleGameplayContent();
 updateHighScore();
+Array.from(spawnableAreas).forEach(area => {
+    area.addEventListener("click", (event) => {
+        whackamoleHandleClick(event);
+    })
+})
+
+
 
 // Game Score and Timer 
 
@@ -49,13 +56,29 @@ async function spawnMole(){
 	// create img with src from PokeAPI 
 	// let whackamoleImage = document.createElement("img");
 	// whackamoleImage.src = apiData.sprites.other.home.front_default;
-	
+
+	// put img into spawnable area 
 	chosenSpawnArea.src = apiData.sprites.other.home.front_default;
 
 	// chosenSpawnArea.appendChild(whackamoleImage);
 }
 
+function wipeImagesFromSpawningAreas(){
+	// loop through spawnableAreas
+	// set the src property of each thing to ""
+	console.log(spawnableAreas);
+	Array.from(spawnableAreas).forEach(area => {
+		area.src = "";
+	});
+}
 
+function whackamoleHandleClick(event){
+	if (event.target.src != ""){
+		currentGameScore++;
+		event.target.src = "";
+		console.log("Clicked on a mole! Score increased, it's now: " + currentGameScore);
+	}
+}
 
 
 
@@ -154,6 +177,9 @@ function startGame(desiredGameTime = defaultGameDuration){
 	// isGameRunning = true;
 	console.log("Started the game. Game time remaining is now: " + gameTimeRemaining);
 
+
+    currentGameScore = 0;
+	wipeImagesFromSpawningAreas();
 	// toggle game controls
 	toggleGameControlButtons();
 	// toggle game content
@@ -199,6 +225,7 @@ function stopGame(){
 	toggleGameControlButtons();
 	// toggle game content
 	toggleGameplayContent();
+	wipeImagesFromSpawningAreas();
 
 	console.log("Stopped the game. Game time remaining is now: " + gameTimeRemaining);
 }
