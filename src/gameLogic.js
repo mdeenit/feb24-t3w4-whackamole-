@@ -10,20 +10,93 @@ let highestGameScore = 0;
 let scoreDisplayText = document.getElementById("currentGameScore");
 let highscoreDisplayText = document.getElementById("highScoreDisplay");
 let timerDisplayText = document.getElementById("currentTimeRemaining");
+let gameRunningInfoContainer = document.getElementById("gameRunningInfo");
+let gamePlayContainer = document.getElementById("gameplayArea");
+let spawnableAreas = document.getElementsByClassName("whackamoleSpawnArea");
+let spawningInterval = null;
+
+// because of function hoisting, we can call these functions before they are declared!
+// These are called as soon as the page loads:
+toggleGameControlButtons();
+toggleGameplayContent();
+updateHighScore();
 
 // Game Score and Timer 
 
 function gameTimeStep(){
 	// update score displayed
-    scoreDisplayText.innerText = "Score " + currentGameScore; 
+	scoreDisplayText.innerText = "Score: " + currentGameScore;
 
 	// update time remaining displayed
-    timerDisplayText.innerText = "Time Remaining: " + gameTimeRemaining; 
+	timerDisplayText.innerText = "Time Remaining: " + gameTimeRemaining;
+
+	// update the highscore based on score ASAP
+	updateHighScore();
+}
+
+
+
+async function spawnMole(){
+	// pick a random spawnable area
+	let randomNumberWithinArrayRange = Math.floor(Math.random() * spawnableAreas.length);
+	let chosenSpawnArea = spawnableAreas[randomNumberWithinArrayRange];
+
+	// grab an image from PokeAPI 
+	let randomPokemonNumber = Math.floor(Math.random() * 1025) + 1;
+	let apiResponse = await fetch("https://pokeapi.co/api/v2/pokemon/" + randomPokemonNumber);
+	let apiData = await apiResponse.json();
+
+	// create img with src from PokeAPI 
+	// let whackamoleImage = document.createElement("img");
+	// whackamoleImage.src = apiData.sprites.other.home.front_default;
+	
+	chosenSpawnArea.src = apiData.sprites.other.home.front_default;
+
+	// chosenSpawnArea.appendChild(whackamoleImage);
 }
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+function toggleGameplayContent(){
+	// toggle the score, timer text, and game area elements
+	if (gameTimeRemaining > 0){
+		gameRunningInfoContainer.style.display = "inherit";
+		gamePlayContainer.style.display = "inherit";
+	} else {
+		gameRunningInfoContainer.style.display = "none";
+		gamePlayContainer.style.display = "none";
+	}
+}
+
+function updateHighScore(){
+	// check localstorage for a high score
+	highestGameScore = localStorage.getItem("highScore") || 0;
+
+	// compare high score to current score
+	// if current score is higher than high score,
+	if (currentGameScore > highestGameScore){
+		// write to local storage
+		localStorage.setItem("highScore", currentGameScore);
+
+		// update high score text 
+		highestGameScore = currentGameScore;
+	}
+
+	// make sure the text is always reflecting the value 
+	// even if value didn't change, because HTML has placeholder value that is not valid
+	highscoreDisplayText.innerText = "High Score: " + highestGameScore;
+}
 
 
 
@@ -74,7 +147,7 @@ function toggleGameControlButtons(){
 
 }
 
-toggleGameControlButtons();
+
 
 function startGame(desiredGameTime = defaultGameDuration){
 	gameTimeRemaining = desiredGameTime;
@@ -83,6 +156,8 @@ function startGame(desiredGameTime = defaultGameDuration){
 
 	// toggle game controls
 	toggleGameControlButtons();
+	// toggle game content
+	toggleGameplayContent();
 
 	gameCountdownInterval = setInterval(() => {
 		gameTimeRemaining -= 1;
@@ -90,17 +165,22 @@ function startGame(desiredGameTime = defaultGameDuration){
 
 		if (gameTimeRemaining <= 0){
 			// if game has no time remaining, stop subtracting from it!
-			clearInterval(gameCountdownInterval);
+			
 			console.log("Game has finished!");
 			stopGame();
 		}
 
 	}, 1000);
 
-    gameUpdateInterval = setInterval(gameTimeStep, 100); 
+	gameUpdateInterval = setInterval(gameTimeStep, 100);
+
+	// TODO: Refactor for multiple spawningIntervals or find a way to make it
+	// a different duration on each repetition
+	spawningInterval = setInterval(() => {
+		spawnMole();
+	}, 1000);
 
 
-    
 }
 
 // startGame(); // gameTimeRemaining becomes 120 
@@ -109,8 +189,16 @@ function startGame(desiredGameTime = defaultGameDuration){
 function stopGame(){
 	gameTimeRemaining = 0;
 	
+	// stop all intervals
+	clearInterval(gameCountdownInterval);
+	clearInterval(gameUpdateInterval);
+	clearInterval(spawningInterval);
+	gameTimeStep();
+
 	// toggle game controls
 	toggleGameControlButtons();
+	// toggle game content
+	toggleGameplayContent();
 
 	console.log("Stopped the game. Game time remaining is now: " + gameTimeRemaining);
 }
@@ -118,7 +206,7 @@ function stopGame(){
 // null.addEventListener
 // button.addEventListener
 startGameButton.addEventListener("click", () => {
-	startGame(3);
+	startGame(10);
 });
 
 stopGameButton.addEventListener("click", () => {
